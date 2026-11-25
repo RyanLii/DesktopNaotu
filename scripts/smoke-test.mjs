@@ -32,7 +32,11 @@ await menu('CmdOrCtrl+Z'); eq(await data('a1'), null, 'undo add'); await menu('C
 const BTN = `[...document.querySelectorAll('.hotbox .button')].find(b=>/^(Below text|线下文字)/.test(b.textContent))`;
 const rightClick = async id => { await sel(id); const p = await pos(`minder.getNodeById('${id}').getRenderer('TextRenderer').getRenderShape().node`); for (const type of ['mousePressed', 'mouseReleased']) await c('Input.dispatchMouseEvent', { type, ...p, button: 'right', clickCount: 1 }); await sl(1000); };
 await rightClick('a1'); assert(await ev(`!!(${BTN})`), 'context menu button missing');
+eq(await ev(`${BTN}.querySelector('.label').textContent`), '线下文字', 'fresh install uses Chinese UI');
 await click(await pos(BTN)); eq(await ev(`document.querySelector('.bootbox textarea').value`), 'Below one', 'context menu opens dialog with current text');
+eq(await ev(`[...document.querySelectorAll('.bootbox .modal-footer .btn')].map(b=>b.textContent.trim())`), ['取消', '确定'], 'dialog buttons are Chinese');
+const near = await ev(`(()=>{const n=minder.getNodeById('a1').getRenderContainer().node.getBoundingClientRect(),d=document.querySelector('.bootbox .modal-dialog').getBoundingClientRect();return{below:Math.round(d.top-n.bottom),above:Math.round(n.top-d.bottom),inView:d.left>=0&&d.top>=0&&d.right<=innerWidth&&d.bottom<=innerHeight}})()`);
+assert(near.inView && ((near.below >= 0 && near.below <= 20) || (near.above >= 0 && near.above <= 20)), 'dialog not next to node: ' + JSON.stringify(near)); console.log('PASS dialog opens next to the node', JSON.stringify(near));
 await fill('Edited\nline two');
 eq(await data('a1'), 'Edited\nline two', 'context menu edits, multi-line');
 await rightClick('a1'); await hot();

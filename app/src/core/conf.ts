@@ -1,7 +1,6 @@
 // 配置文件辅助类
 import { getConfigFilePath, getBackupDirectoryPath } from "./path";
 import { existsSync } from "fs";
-import { app } from "electron";
 import { writeText, readText } from "./io";
 import { Languages, sConfigVersion } from "../define";
 import { logger } from "./logger";
@@ -194,7 +193,8 @@ class DesktopConfig implements IDesktopConfig {
     // 升级配置
     if (oldModel.version !== newModel.version) {
       if (oldModel.isAutoSave) newModel.isAutoSave = oldModel.isAutoSave;
-      if (oldModel.locale) newModel.locale = oldModel.locale;
+      // 不沿用旧的 locale：它是首次启动时按系统语言自动生成的，界面上不能修改。
+      // 升级后统一使用模板里的默认语言（中文）。
       if (oldModel.defSavePath) newModel.defSavePath = oldModel.defSavePath;
       if (oldModel.recentMaxNum) newModel.recentMaxNum = oldModel.recentMaxNum;
       if (oldModel.ifSaveLogToDisk) newModel.ifSaveLogToDisk = oldModel.ifSaveLogToDisk;
@@ -207,8 +207,8 @@ class DesktopConfig implements IDesktopConfig {
   }
 
   getTemplate(): NaotuConfig {
-    let locale = app.getLocale();
-    const lang = (locale as Languages) || "en";
+    // 默认中文界面，不跟随系统语言
+    const lang: Languages = "zh-CN";
 
     return new NaotuConfig(
       lang,

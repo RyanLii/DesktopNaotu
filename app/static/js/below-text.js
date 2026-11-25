@@ -164,6 +164,8 @@
     /* ---------------- 编辑框 ---------------- */
     // 右键菜单打开时按快捷键，全局监听和菜单按钮会同时触发；只允许一个编辑框
     var editorOpen = false;
+    // 编辑框文字的语言跟随编辑器界面；编辑器创建时（见下方右键菜单）设置
+    var uiZh = true;
 
     function openEditor(minder) {
         if (editorOpen) return;
@@ -177,15 +179,53 @@
             minder.focus && minder.focus();
         };
         if (window.bootbox && bootbox.prompt) {
-            bootbox.prompt({
-                title: '横线下方文字（留空则删除）',
+            var $dialog = bootbox.prompt({
+                title: uiZh ? '横线下方文字（留空则删除）' : 'Text below the line (leave empty to delete)',
                 inputType: 'textarea',
                 value: old,
+                buttons: {
+                    cancel: { label: uiZh ? '取消' : 'Cancel' },
+                    confirm: { label: uiZh ? '确定' : 'OK' }
+                },
                 callback: done
             });
+            placeNearNode($dialog, minder.getSelectedNode());
         } else {
             simplePrompt(old, done);
         }
+    }
+
+    // Bootstrap 默认把对话框放在窗口顶部，离节点很远。改为放在节点下方；放不下就放在上方
+    var DIALOG_WIDTH = 420;
+    var DIALOG_GAP = 12;
+    var VIEW_MARGIN = 10;
+
+    function placeNearNode($dialog, node) {
+        if (!$dialog || !$dialog.find || !node) return;
+        var box = $dialog.find('.modal-dialog')[0];
+        if (!box) return;
+        var r = node.getRenderContainer().node.getBoundingClientRect();
+        var vw = window.innerWidth, vh = window.innerHeight;
+        var width = Math.min(DIALOG_WIDTH, vw - VIEW_MARGIN * 2);
+        box.style.position = 'absolute';
+        box.style.margin = '0';
+        box.style.width = width + 'px';
+        // 对话框要等遮罩动画结束才显示，此时还是 display:none，量不到高度。临时以不可见方式显示来测量
+        var modal = $dialog[0];
+        var prevDisplay = modal.style.display, prevVisibility = modal.style.visibility;
+        modal.style.visibility = 'hidden';
+        modal.style.display = 'block';
+        var height = box.offsetHeight;
+        modal.style.display = prevDisplay;
+        modal.style.visibility = prevVisibility;
+        var top = r.bottom + DIALOG_GAP;
+        if (top + height > vh - VIEW_MARGIN) {
+            top = r.top - DIALOG_GAP - height;
+        }
+        top = Math.max(VIEW_MARGIN, Math.min(top, vh - VIEW_MARGIN - height));
+        var left = Math.max(VIEW_MARGIN, Math.min(r.left, vw - VIEW_MARGIN - width));
+        box.style.left = left + 'px';
+        box.style.top = top + 'px';
     }
 
     function simplePrompt(value, cb) {
@@ -237,7 +277,7 @@
             var minder = this.minder;
             var fsm = this.fsm;
             // 编辑器语言没有公开的读取方法；用一个内置词条判断当前是否为中文界面
-            var zh = /[一-龥]/.test(this.lang.t('appendchildnode', 'runtime/node'));
+            var zh = uiZh = /[一-龥]/.test(this.lang.t('appendchildnode', 'runtime/node'));
             // 环形按钮直径只有 70px，默认字号放不下这个按钮的文字，所以单独缩小
             var style = document.createElement('style');
             style.textContent =
