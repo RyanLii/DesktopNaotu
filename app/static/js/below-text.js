@@ -4,7 +4,7 @@
  * 用法：
  *   1. 选中节点，按 Ctrl+Shift+B（Mac: Cmd+Shift+B），输入文字，确定。
  *      留空并确定 = 删除线下文字。支持多行（文本框里回车换行）。
- *   2. 双击已有的线下文字，可以直接修改。
+ *   2. 也可以在节点上点右键，在弹出的菜单里选“线下文字”。
  *   3. 数据保存在节点 data.belowtext 中，随 .km 文件一起保存，
  *      导出 PNG / SVG 时也会带上。
  *
@@ -53,15 +53,7 @@
         base: kityminder.Render,
 
         create: function (node) {
-            var group = new kity.Group().setId('node_belowtext_' + node.getData('id'));
-            group.setStyle('cursor', 'text');
-            group.on('dblclick', function (e) {
-                e.stopPropagation && e.stopPropagation();
-                var minder = node.getMinder();
-                minder.select(node, true);
-                openEditor(minder);
-            });
-            return group;
+            return new kity.Group().setId('node_belowtext_' + node.getData('id'));
         },
 
         shouldRender: function (node) {
@@ -170,10 +162,16 @@
     });
 
     /* ---------------- 编辑框 ---------------- */
+    // 右键菜单打开时按快捷键，全局监听和菜单按钮会同时触发；只允许一个编辑框
+    var editorOpen = false;
+
     function openEditor(minder) {
+        if (editorOpen) return;
         if (minder.queryCommandState('belowtext') === -1) return;
+        editorOpen = true;
         var old = minder.queryCommandValue('belowtext') || '';
         var done = function (val) {
+            editorOpen = false;
             if (val === null || val === undefined) return; // 取消
             minder.execCommand('belowtext', val);
             minder.focus && minder.focus();
@@ -232,6 +230,40 @@
             renderers: { afteroutline: BelowTextRenderer }
         };
     });
+
+    /* ---------------- 右键菜单（hotbox）按钮 ---------------- */
+    if (kityminder.Editor && kityminder.Editor.assemble) {
+        kityminder.Editor.assemble(function () {
+            var minder = this.minder;
+            var fsm = this.fsm;
+            // 编辑器语言没有公开的读取方法；用一个内置词条判断当前是否为中文界面
+            var zh = /[一-龥]/.test(this.lang.t('appendchildnode', 'runtime/node'));
+            // 环形按钮直径只有 70px，默认字号放不下这个按钮的文字，所以单独缩小
+            var style = document.createElement('style');
+            style.textContent =
+                '.hotbox .state .ring .button .belowtext-label{font-size:13px;margin-top:20px}' +
+                '.hotbox .state .ring .button .belowtext-key{font-size:9px;letter-spacing:-0.2px}';
+            document.head.appendChild(style);
+            this.hotbox.state('main').button({
+                position: 'ring',
+                label: zh ? '线下文字' : 'Below text',
+                key: 'Ctrl+Shift+B',
+                render: function (format, option) {
+                    return format('<span class="label belowtext-label">{label}</span>' +
+                        '<span class="key belowtext-key">{key}</span>', option);
+                },
+                action: function () {
+                    fsm.jump('normal', 'command-executed');
+                    openEditor(minder);
+                },
+                enable: function () {
+                    return minder.queryCommandState('belowtext') != -1;
+                }
+            });
+        });
+    } else {
+        console.error('[below-text] kityminder.Editor.assemble 不存在，右键菜单按钮未添加');
+    }
 
     window.kityminderBelowText = { open: openEditor };
 })();

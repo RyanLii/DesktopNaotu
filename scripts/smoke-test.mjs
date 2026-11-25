@@ -29,8 +29,16 @@ const gap = async () => (await y('a2')) - (await y('a1')); const g0 = await gap(
 await sel('a1'); await hot(); await fill('Below one');
 eq(await data('a1'), 'Below one', 'Ctrl+Shift+B adds text'); assert(await gap() > g0); console.log('PASS following node moves down');
 await menu('CmdOrCtrl+Z'); eq(await data('a1'), null, 'undo add'); await menu('CmdOrCtrl+Y'); eq(await data('a1'), 'Below one', 'redo add');
-await click(await pos(`document.getElementById('node_belowtext_a1')`), 2); await fill('Edited\nline two');
-eq(await data('a1'), 'Edited\nline two', 'double-click edits, multi-line');
+const BTN = `[...document.querySelectorAll('.hotbox .button')].find(b=>/^(Below text|线下文字)/.test(b.textContent))`;
+const rightClick = async id => { await sel(id); const p = await pos(`minder.getNodeById('${id}').getRenderer('TextRenderer').getRenderShape().node`); for (const type of ['mousePressed', 'mouseReleased']) await c('Input.dispatchMouseEvent', { type, ...p, button: 'right', clickCount: 1 }); await sl(1000); };
+await rightClick('a1'); assert(await ev(`!!(${BTN})`), 'context menu button missing');
+await click(await pos(BTN)); eq(await ev(`document.querySelector('.bootbox textarea').value`), 'Below one', 'context menu opens dialog with current text');
+await fill('Edited\nline two');
+eq(await data('a1'), 'Edited\nline two', 'context menu edits, multi-line');
+await rightClick('a1'); await hot();
+eq(await ev(`document.querySelectorAll('.bootbox').length`), 1, 'shortcut while context menu is open opens one dialog');
+await ev(`document.querySelector('.bootbox [data-bb-handler=cancel]').click();1`); await sl(1000);
+eq(await data('a1'), 'Edited\nline two', 'cancel keeps text');
 await menu('CmdOrCtrl+Z'); eq(await data('a1'), 'Below one', 'undo edit'); await menu('CmdOrCtrl+Y');
 for (const id of ['a', 'b', 'c']) { await sel(id); await hot(); await fill('L1 note ' + id); }
 for (const id of ['a', 'b', 'c']) {
