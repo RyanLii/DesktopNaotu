@@ -51,7 +51,8 @@ import { sIndexUrl } from "./define";
       backgroundColor: "#fbfbfb",
       webPreferences: {
         nodeIntegration: true,
-        contextIsolation: false
+        contextIsolation: false,
+        enableRemoteModule: true
       },
     });
 
