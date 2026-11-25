@@ -4,6 +4,7 @@
   "description": "桌面版脑图",
   "main": "dist/main.js",
   "scripts": {
+    "postinstall": "node scripts/fix-deps.js",
     "start": "gulp default",
     "demo": "electron .",
     "packwin32": "cross-var electron-packager ./ DesktopNaotu --asar --platform=win32 --arch=ia32 --out=../OutApp --icon=app/static/favicon.ico --electron-version=3.1.13 --app-version=$npm_package_version --ignore=\"(.git|screenshot|doc|src|app|bower_components|electron-packager)\" --overwrite --prune",
@@ -59,9 +60,12 @@
   },
   "dependencies": {
     "ejs": "^3.1.5",
-    "electron": "^11.2.1",
+    "@dabh/diagnostics": "2.0.2",
+    "electron": "11.5.0",
     "hotkeys-js": "^3.6.2",
     "moment": "^2.23.0",
-    "winston": "^3.1.0"
+    "logform": "2.2.0",
+    "winston": "3.3.3",
+    "winston-transport": "4.4.0"
   }
 }

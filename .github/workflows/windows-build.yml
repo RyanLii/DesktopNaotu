@@ -1,0 +1,50 @@
+name: windows-build
+on:
+  push:
+    branches: [feature/below-text]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 14
+      - run: npm install --no-package-lock
+      - run: npx bower@1.8.14 install --config.interactive=false
+        env:
+          GIT_CONFIG_COUNT: 1
+          GIT_CONFIG_KEY_0: url.https://github.com/.insteadOf
+          GIT_CONFIG_VALUE_0: git://github.com/
+      - run: node node_modules/gulp/bin/gulp.js
+      - run: node scripts/stage.js
+      - run: cd build/stage && npm install --production --no-package-lock
+      - run: node node_modules/electron-packager/cli.js build/stage DesktopNaotu --asar --platform=win32 --arch=x64 --out=build/out --icon=app/static/favicon.ico --electron-version=11.5.0 --no-prune --overwrite
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Smoke test packaged app on Windows
+        run: |
+          ./build/out/DesktopNaotu-win32-x64/DesktopNaotu.exe --remote-debugging-port=9333 --user-data-dir="$(cygpath -w "$RUNNER_TEMP")\\ud" > app.log 2>&1 &
+          node scripts/smoke-test.mjs build/smoke; code=$?
+          cat app.log | head -40
+          taskkill //F //IM DesktopNaotu.exe || true
+          exit $code
+      - name: Zip
+        if: success()
+        shell: pwsh
+        run: Compress-Archive build/out/DesktopNaotu-win32-x64 build/DesktopNaotu-below-text-win32-x64.zip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows
+          path: |
+            build/*.zip
+            build/smoke

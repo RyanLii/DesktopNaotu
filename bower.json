@@ -26,9 +26,9 @@
   "dependencies": {
     "kity": "^2.0.5",
     "marked": "0.6.2",
-    "kityminder-editor": "git://github.com/NaoTu/kityminder-editor#master",
+    "kityminder-editor": "https://github.com/NaoTu/kityminder-editor.git#7c4316b3362165a1d968aeb5d49fbaca12d64ff6",
     "bootbox.js": "bootbox#^4.4.0",
-    "kityminder-core": "git://github.com/NaoTu/kityminder-core.git#dev"
+    "kityminder-core": "https://github.com/NaoTu/kityminder-core.git#c6aab9f374b85a0e279bd3aa6fef720b0c625347"
   },
   "overrides": {
     "jquery": {

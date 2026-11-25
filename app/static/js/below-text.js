@@ -144,6 +144,31 @@
         connection.setPathData(['M', p1, 'C', mx, p1.y, mx, p2.y, p2, 'L', p3]);
     });
 
+    /* ---------------- 改写 arc 连线（一级节点）：端点对齐原节点中线，而不是含线下文字的整体中线 ---------------- */
+    var arcMarker = new kity.Marker().pipe(function () {
+        var r = 7;
+        var dot = new kity.Circle(r - 1);
+        this.addShape(dot);
+        this.setRef(r - 1, 0).setViewBox(-r, -r, r + r, r + r).setWidth(r).setHeight(r);
+        this.dot = dot;
+        this.node.setAttribute('markerUnits', 'userSpaceOnUse');
+    });
+
+    kityminder.Connect.register('arc', function (node, parent, connection, width, color) {
+        var box = node.getLayoutBox(),
+            pBox = parent.getLayoutBox();
+        var endY = box.cy - (node._belowTextExtra || 0) / 2;
+        var start = new kity.Point(pBox.cx, pBox.cy - (parent._belowTextExtra || 0) / 2);
+        var end = box.x > pBox.x ? new kity.Point(box.left - 2, endY) : new kity.Point(box.right + 2, endY);
+        var vector = kity.Vector.fromPoints(start, end);
+
+        node.getMinder().getPaper().addResource(arcMarker);
+        connection.setMarker(arcMarker);
+        arcMarker.dot.fill(color);
+        connection.setPathData(['M', start, 'A', Math.abs(vector.x), Math.abs(vector.y), 0, 0,
+            vector.x * vector.y > 0 ? 0 : 1, end]);
+    });
+
     /* ---------------- 编辑框 ---------------- */
     function openEditor(minder) {
         if (minder.queryCommandState('belowtext') === -1) return;

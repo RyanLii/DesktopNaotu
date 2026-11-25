@@ -6,3 +6,4 @@ OutApp/
 .electron/
 package-lock.json
 *.log
+build/
