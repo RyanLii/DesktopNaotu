@@ -141,6 +141,13 @@ gulp.task("copy-js-vendor", function() {
     .pipe(notify({ message: "Scripts task complete" }));
 });
 
+// 自有静态脚本，原样复制（不合并、不压缩）
+gulp.task("copy-js-static", function() {
+  return gulp
+    .src(["app/static/js/**/*.js"])
+    .pipe(gulp.dest("dist/js"));
+});
+
 gulp.task("copy-css-vendor", function() {
   return gulp
     .src([
@@ -224,6 +231,7 @@ gulp.task("default", function(done) {
     "copy-css-vendor",
     "copy-i18n-vendor",
     "copy-js-vendor",
+    "copy-js-static",
     "copy-font-vendor",
     "copy-images-vendor",
     // 'clean-libs',
